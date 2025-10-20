@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Генератор паролей</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 400px;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+
+        .section {
+            padding: 25px;
+            border-bottom: 1px solid #eee;
+        }
+
+        .section:last-child {
+            border-bottom: none;
+        }
+
+        h2 {
+            color: #333;
+            margin-bottom: 15px;
+            font-size: 1.3em;
+            text-align: center;
+        }
+
+        .password-display {
+            font-size: 20px;
+            font-weight: bold;
+            padding: 15px;
+            background: #f8f9fa;
+            border: 2px dashed #ddd;
+            border-radius: 10px;
+            margin: 15px 0;
+            text-align: center;
+            letter-spacing: 2px;
+            word-break: break-all;
+            min-height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .buttons {
+            display: flex;
+            gap: 10px;
+            flex-direction: column;
+        }
+
+        button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 15px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: bold;
+            transition: all 0.3s ease;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        .clear-btn {
+            background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%);
+        }
+
+        .history-list {
+            max-height: 300px;
+            overflow-y: auto;
+            border: 1px solid #ddd;
+            border-radius: 10px;
+            padding: 10px;
+            background: #fafafa;
+        }
+
+        .history-item {
+            padding: 12px;
+            border-bottom: 1px solid #eee;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .history-item:last-child {
+            border-bottom: none;
+        }
+
+        .password-text {
+            font-weight: bold;
+            letter-spacing: 1px;
+        }
+
+        .timestamp {
+            font-size: 11px;
+            color: #888;
+        }
+
+        .empty-history {
+            text-align: center;
+            color: #888;
+            padding: 20px;
+            font-style: italic;
+        }
+
+        /* Стили для скроллбара */
+        .history-list::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .history-list::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 3px;
+        }
+
+        .history-list::-webkit-scrollbar-thumb {
+            background: #667eea;
+            border-radius: 3px;
+        }
+
+        .history-list::-webkit-scrollbar-thumb:hover {
+            background: #764ba2;
+        }
+
+        @media (max-height: 700px) {
+            .history-list {
+                max-height: 200px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Верхняя секция - генерация -->
+        <div class="section">
+            <h2>🔐 Генерация пароля</h2>
+            <div class="password-display" id="passwordDisplay">
+                Нажмите "Сгенерировать"
+            </div>
+            <div class="buttons">
+                <button onclick="generatePassword()">
+                    🎲 Сгенерировать пароль
+                </button>
+                <button onclick="copyPassword()">
+                    📋 Копировать в буфер
+                </button>
+            </div>
+        </div>
+
+        <!-- Нижняя секция - история -->
+        <div class="section">
+            <h2>📜 История паролей</h2>
+            <div class="buttons">
+                <button class="clear-btn" onclick="clearHistory()">
+                    🗑️ Очистить историю
+                </button>
+            </div>
+            <div class="history-list" id="historyList">
+                <div class="empty-history">История пуста</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Загрузка истории из localStorage
+        let passwordHistory = JSON.parse(localStorage.getItem('passwordHistory')) || [];
+
+        // Функция генерации пароля
+        function generatePassword() {
+            const letters = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
+            const numbers = '0123456789';
+            const symbols = '!@';
+            
+            // Все доступные символы
+            const allChars = letters + numbers + symbols;
+            
+            // Генерируем 3 группы по 4 символа
+            const part1 = generatePart(allChars);
+            const part2 = generatePart(allChars);
+            const part3 = generatePart(allChars);
+            
+            // Случайный разделитель
+            const separator = Math.random() > 0.5 ? '-' : '_';
+            
+            // Собираем пароль
+            const password = `${part1}${separator}${part2}${separator}${part3}`;
+            
+            // Отображаем пароль
+            document.getElementById('passwordDisplay').textContent = password;
+            
+            // Добавляем в историю
+            addToHistory(password);
+        }
+
+        // Генерация части пароля (4 символа)
+        function generatePart(chars) {
+            let result = '';
+            for (let i = 0; i < 4; i++) {
+                result += chars[Math.floor(Math.random() * chars.length)];
+            }
+            return result;
+        }
+
+        // Добавление в историю
+        function addToHistory(password) {
+            const timestamp = new Date().toLocaleString('ru-RU');
+            
+            // Добавляем в начало массива
+            passwordHistory.unshift({
+                password: password,
+                timestamp: timestamp
+            });
+            
+            // Ограничиваем историю 50 записями
+            if (passwordHistory.length > 50) {
+                passwordHistory = passwordHistory.slice(0, 50);
+            }
+            
+            // Сохраняем в localStorage
+            localStorage.setItem('passwordHistory', JSON.stringify(passwordHistory));
+            
+            // Обновляем отображение истории
+            updateHistoryDisplay();
+        }
+
+        // Обновление отображения истории
+        function updateHistoryDisplay() {
+            const historyList = document.getElementById('historyList');
+            
+            if (passwordHistory.length === 0) {
+                historyList.innerHTML = '<div class="empty-history">История пуста</div>';
+                return;
+            }
+            
+            historyList.innerHTML = passwordHistory.map(item => `
+                <div class="history-item">
+                    <span class="password-text">${item.password}</span>
+                    <span class="timestamp">${item.timestamp}</span>
+                </div>
+            `).join('');
+        }
+
+        // Копирование пароля в буфер обмена
+        function copyPassword() {
+            const password = document.getElementById('passwordDisplay').textContent;
+            
+            if (password && password !== 'Нажмите "Сгенерировать"') {
+                navigator.clipboard.writeText(password).then(() => {
+                    // Временное сообщение об успехе
+                    const originalText = document.getElementById('passwordDisplay').textContent;
+                    document.getElementById('passwordDisplay').textContent = '✅ Скопировано!';
+                    
+                    setTimeout(() => {
+                        document.getElementById('passwordDisplay').textContent = originalText;
+                    }, 1500);
+                }).catch(err => {
+                    console.error('Ошибка копирования: ', err);
+                    alert('Не удалось скопировать пароль');
+                });
+            }
+        }
+
+        // Очистка истории
+        function clearHistory() {
+            if (passwordHistory.length === 0) {
+                alert('История уже пуста!');
+                return;
+            }
+            
+            if (confirm('Вы уверены, что хотите очистить всю историю паролей?')) {
+                passwordHistory = [];
+                localStorage.setItem('passwordHistory', JSON.stringify(passwordHistory));
+                updateHistoryDisplay();
+                
+                // Показываем подтверждение
+                const historyList = document.getElementById('historyList');
+                historyList.innerHTML = '<div class="empty-history">История очищена</div>';
+                
+                setTimeout(() => {
+                    updateHistoryDisplay();
+                }, 1000);
+            }
+        }
+
+        // Инициализация при загрузке
+        document.addEventListener('DOMContentLoaded', function() {
+            updateHistoryDisplay();
+            // Автоматически генерируем первый пароль
+            generatePassword();
+        });
+    </script>
+</body>
+</html>
